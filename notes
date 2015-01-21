@@ -1,0 +1,54 @@
+#!/usr/bin/env zsh
+
+function help() {
+  echo "Usage:
+  ${SELF} [command [args]]
+
+Commands:
+  add <note>
+  view [<dates>]
+  search <search terms>"
+}
+
+function print_notes() {
+  git log --pretty=format:"%cd  %s" --date=short $@
+}
+
+# Go to the notes directory
+NOTES_DIR=$(cd $(dirname $0); pwd)
+cd "$NOTES_DIR"
+
+# Get the command
+COMMAND=$1
+shift
+
+case "${COMMAND}" in
+  "add")
+    NOTE="${@}"
+    if [[ ${#} -eq 0 ]]; then
+        help
+        exit 1
+    fi
+    git commit --allow-empty -m "${NOTE}" > /dev/null 2>&1
+    ;;
+  "view")
+    DATE_STRING="${@}"
+    if [[ ${#} -gt 0 ]]; then
+      print_notes master@{"${DATE_STRING}"}
+    else
+      print_notes
+    fi
+    ;;
+  "search")
+    SEARCH_TERMS="${@}"
+    print_notes -i --grep "${SEARCH_TERMS}"
+    ;;
+  "sync")
+    git pull --rebase
+    git push
+    ;;
+  *)
+    help
+    exit 0
+    ;;
+esac
